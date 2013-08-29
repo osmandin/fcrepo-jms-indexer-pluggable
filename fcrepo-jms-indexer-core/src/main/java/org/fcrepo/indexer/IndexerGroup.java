@@ -101,7 +101,8 @@ public class IndexerGroup implements MessageListener {
     }
 
     /**
-     * 
+     * Extract node path from Atom category list
+     * @return Node path or repositoryUrl if it's not found
      */
     public String getPath(java.util.List<Category> categories) {
         for (Category c : categories) {
@@ -123,16 +124,11 @@ public class IndexerGroup implements MessageListener {
                 final String xml = ((TextMessage) message).getText();
                 Document<Entry> doc = atomParser.parse(new StringReader(xml));
                 Entry entry = doc.getRoot();
-                // FIXME: This pid logic does not work with path: /rest/a/b/c
                 final String pid = entry.getCategories("xsd:string").get(0)
                         .getTerm();
-                final String path = entry.getCategories("xsd:string").get(0)
-                        .getLabel();
-
                 // if the object is updated, fetch current content
                 String content = null;
                 if (!"purgeObject".equals(entry.getTitle())) {
-                    // HttpGet get = new HttpGet(repositoryURL + pid);
                     HttpGet get = new HttpGet(
                             getPath(entry.getCategories("xsd:string")));
                     HttpResponse response = httpclient.execute(get);
