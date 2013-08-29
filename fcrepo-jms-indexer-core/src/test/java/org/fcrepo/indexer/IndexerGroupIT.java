@@ -126,6 +126,7 @@ public class IndexerGroupIT {
         assertTrue("Filename doesn't match: " + f.getAbsolutePath(),
                    f.getName().startsWith(pid));
         assertTrue("File size too small: " + f.length(), f.length() > 500);
+        
 
         final int expectedTriples = 4;
         waitForTriples(expectedTriples, pid);
@@ -133,6 +134,8 @@ public class IndexerGroupIT {
         // triples should exist in the triplestore
         assertTrue("Triples should exist",
                 sparqlIndexer.countTriples(pid) == expectedTriples);
+        
+
     }
 
     @Test
@@ -173,20 +176,19 @@ public class IndexerGroupIT {
 
         final int expectedTriples = 0;
         waitForTriples(expectedTriples, pid);
+        
+        
 
         // triples should not exist in the triplestore
         assertTrue("Triples should not exist",
                 sparqlIndexer.countTriples(pid) == expectedTriples);
-    }
+    }    
     
-    
-    //Test should fail because IndexGroup.java just uses repositoryURL + pid, not the full path, to retrieve node
     @Test
-    @Ignore
     public void indexerGroupUpdateTestingFullPath() throws Exception {
     	  // create update message and send to indexer group
         final String pid = "test_pid_10";
-        final String SUFFIX = "/a/b/c/";        
+        final String SUFFIX = "a/b/c/";        
        
         // create dummy object
         final HttpPost method = new HttpPost(serverAddress + SUFFIX +  pid);
@@ -205,18 +207,15 @@ public class IndexerGroupIT {
         assertTrue("Filename doesn't match: " + f.getAbsolutePath(),
                    f.getName().startsWith(pid));
         assertTrue("File size too small: " + f.length(), f.length() > 500);
-
+        
         final int expectedTriples = 4;
-        waitForTriples(expectedTriples, pid);
-
+        waitForTriples(expectedTriples, SUFFIX + pid);
+        
         // triples should exist in the triplestore
         assertTrue("Triples should exist",
-                sparqlIndexer.countTriples(pid) == expectedTriples);
-
+                sparqlIndexer.countTriples(SUFFIX + pid) == expectedTriples);
     }
     	
-    
-
     private void waitForFiles(int expectedFiles, FilenameFilter filter) throws InterruptedException {
         long elapsed = 0;
         long restingWait = 500;
@@ -233,8 +232,8 @@ public class IndexerGroupIT {
 
     private void waitForTriples(int expectTriples, String pid) throws InterruptedException {
         long elapsed = 0;
-        long restingWait = 500;
-        long maxWait = 15000; // 15 seconds
+        long restingWait = 1500;
+        long maxWait = 30000; // 15 seconds
 
         int count = sparqlIndexer.countTriples(pid);
         while ((count != expectTriples) && (elapsed < maxWait)) {

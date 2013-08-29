@@ -30,6 +30,7 @@ import javax.jms.MessageListener;
 import javax.jms.TextMessage;
 
 import org.apache.abdera.Abdera;
+import org.apache.abdera.model.Category;
 import org.apache.abdera.model.Document;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.parser.Parser;
@@ -43,10 +44,9 @@ import org.apache.http.impl.conn.PoolingClientConnectionManager;
 /**
  * MessageListener implementation that retrieves objects from the repository and
  * invokes one or more indexers to index the content.
- *
- * @author Esmé Cowles
- *         Date: Aug 19, 2013
-**/
+ * 
+ * @author Esmé Cowles Date: Aug 19, 2013
+ **/
 public class IndexerGroup implements MessageListener {
     private Parser atomParser = new Abdera().getParser();
     private String repositoryURL;
@@ -56,7 +56,7 @@ public class IndexerGroup implements MessageListener {
 
     /**
      * Default constructor.
-    **/
+     **/
     public IndexerGroup() {
         PoolingClientConnectionManager p = new PoolingClientConnectionManager();
         p.setDefaultMaxPerRoute(5);
@@ -66,21 +66,21 @@ public class IndexerGroup implements MessageListener {
 
     /**
      * Set repository URL.
-    **/
+     **/
     public void setRepositoryURL(String repositoryURL) {
         this.repositoryURL = repositoryURL;
     }
 
     /**
      * Get repository URL.
-    **/
+     **/
     public String getRepositoryURL() {
         return repositoryURL;
     }
 
     /**
      * Set indexers for this group.
-    **/
+     **/
     public void setIndexers(Set indexers) {
         for (Iterator it = indexers.iterator(); it.hasNext();) {
             Object o = it.next();
@@ -88,21 +88,34 @@ public class IndexerGroup implements MessageListener {
                 if (this.indexers == null) {
                     this.indexers = new HashSet<Indexer>();
                 }
-                this.indexers.add( (Indexer)o );
+                this.indexers.add((Indexer) o);
             }
         }
     }
 
     /**
      * Get indexers set for this group.
-    **/
+     **/
     public Set<Indexer> getIndexers() {
         return indexers;
     }
 
     /**
+     * 
+     */
+    public String getPath(java.util.List<Category> categories) {
+        for (Category c : categories) {
+            if (c.getLabel().equals("path")) {
+                return repositoryURL.split(c.getTerm().substring(0, 4))[0]
+                        + c.getTerm();
+            }
+        }
+        return repositoryURL;
+    }
+
+    /**
      * Handle a JMS message representing an object update or deletion event.
-    **/
+     **/
     public void onMessage(Message message) {
         try {
             if (message instanceof TextMessage) {
@@ -113,16 +126,18 @@ public class IndexerGroup implements MessageListener {
                 // FIXME: This pid logic does not work with path: /rest/a/b/c
                 final String pid = entry.getCategories("xsd:string").get(0)
                         .getTerm();
+                final String path = entry.getCategories("xsd:string").get(0)
+                        .getLabel();
 
                 // if the object is updated, fetch current content
                 String content = null;
                 if (!"purgeObject".equals(entry.getTitle())) {
-                    HttpGet get = new HttpGet(repositoryURL + pid);
+                    // HttpGet get = new HttpGet(repositoryURL + pid);
+                    HttpGet get = new HttpGet(
+                            getPath(entry.getCategories("xsd:string")));
                     HttpResponse response = httpclient.execute(get);
-                    content = IOUtils.toString(
-                        response.getEntity().getContent(),
-                        Charset.forName("UTF-8")
-                    );
+                    content = IOUtils.toString(response.getEntity()
+                            .getContent(), Charset.forName("UTF-8"));
                 }
 
                 // call each registered indexer
