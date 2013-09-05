@@ -35,6 +35,7 @@ import org.apache.abdera.model.Document;
 import org.apache.abdera.model.Entry;
 import org.apache.abdera.parser.Parser;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -107,8 +108,7 @@ public class IndexerGroup implements MessageListener {
     public String getPath(java.util.List<Category> categories) {
         for (Category c : categories) {
             if (c.getLabel().equals("path")) {
-                return repositoryURL.split(c.getTerm().substring(0, 4))[0]
-                        + c.getTerm();
+                return repositoryURL + StringUtils.substringAfterLast(c.getTerm(), "objects/");
             }
         }
         return repositoryURL;
@@ -124,8 +124,6 @@ public class IndexerGroup implements MessageListener {
                 final String xml = ((TextMessage) message).getText();
                 Document<Entry> doc = atomParser.parse(new StringReader(xml));
                 Entry entry = doc.getRoot();
-                final String pid = entry.getCategories("xsd:string").get(0)
-                        .getTerm();
                 // if the object is updated, fetch current content
                 String content = null;
                 if (!"purgeObject".equals(entry.getTitle())) {
@@ -135,6 +133,10 @@ public class IndexerGroup implements MessageListener {
                     content = IOUtils.toString(response.getEntity()
                             .getContent(), Charset.forName("UTF-8"));
                 }
+                //pid represents the full path. Alternative would be to send path separately in all calls
+                //String pid = getPath(entry.getCategories("xsd:string")).replace("//objects", "/objects");
+                String pid = getPath(entry.getCategories("xsd:string"));
+
 
                 // call each registered indexer
                 for (Indexer indexer : indexers) {

@@ -28,7 +28,7 @@
 
   <!-- file serializer -->
   <bean id="fileSerializer" class="org.fcrepo.indexer.FileSerializer">
-    <property name="path" value="${file.serializer.dir:/tmp/fileSerializer/}"/>
+    <property name="path" value="${file.serializer.dir:./target/test-classes/fileSerializer/}"/>
   </bean>
 
   <!-- Message Driven POJO (MDP) that manages individual indexers -->
